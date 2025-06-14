@@ -44,7 +44,6 @@ export default function App() {
           <Text>비타민 A: {result["비타민 A(μg RAE)"]} μg RAE</Text>
           <Text>비타민 C: {result["비타민 C(mg)"]} mg</Text>          
           <Text>비타민 D: {result["비타민 D(μg)"]} μg</Text>          
-
         </View>
       )}
     </ScrollView>

@@ -1,8 +1,17 @@
 import * as ImagePicker from 'expo-image-picker';
 import moment from 'moment';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  StyleSheet, Text,Alert, Platform, TouchableOpacity, View, Pressable, Modal, TextInput, Image, FlatList} from 'react-native';
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet, Text,
+  TextInput,
+  TouchableOpacity, View
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Calendar from '../Calendar'; // CalendarStrip 포함된 컴포넌트
 
@@ -30,7 +39,6 @@ type Item = {
 };
 
 export default function index() {
-
   const [items, setItems] = useState<Item[]>([]); // 아이템 리스트
   const [modalVisible, setModalVisible] = useState(false); // 모달 상태
   const [imageUri, setImageUri] = useState<string | null>(null); // 이미지 url
@@ -40,7 +48,6 @@ export default function index() {
   const [selectedDate, setSelectedDate] = useState(moment()); // 날짜 선택
   const [mealType, setMealType] = useState('breakfast');  // radiobutton option 선택
   const [predictName, setPredictName] = useState(null);
-
   const [result, setResult] = useState<Food | null>(null);
   
 
@@ -208,7 +215,22 @@ export default function index() {
             <TouchableOpacity onPress={() => openModal(index)} style={styles.cardButton}>
               <Text style={[styles.cardButtonText, { color: '#029673' }]}>수정</Text>
             </TouchableOpacity>
-            
+            {result && (
+        <View>
+          <Text>식품명: {result["식품명"]}</Text>
+          <Text>에너지: {result["에너지(kcal)"]} kcal</Text>
+          <Text>탄수화물: {result["탄수화물(g)"]} g</Text>
+          <Text>단백질: {result["단백질(g)"]} g</Text>
+          <Text>당류: {result["당류(g)"]} g</Text>
+          <Text>칼슘: {result["칼슘(mg)"]} mg</Text>
+          <Text>철: {result["철(mg)"]} mg</Text>
+          <Text>인: {result["인(mg)"]} mg</Text>
+          <Text>칼륨: {result["칼륨(mg)"]} mg</Text>
+          <Text>비타민 A: {result["비타민 A(μg RAE)"]} μg RAE</Text>
+          <Text>비타민 C: {result["비타민 C(mg)"]} mg</Text>          
+          <Text>비타민 D: {result["비타민 D(μg)"]} μg</Text>          
+        </View>
+      )}    
           </View>
         </View>
       )}
@@ -216,7 +238,7 @@ export default function index() {
 
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalWrap}>
-    <View style={styles.modal}>
+        <View style={styles.modal}>
             <Text style={styles.label}>이미지</Text>
             {imageUri ? (
               <Image
@@ -261,11 +283,10 @@ export default function index() {
                 </Pressable>
               ))}
             </View>
-            <TouchableOpacity style = {styles.button} onPress={
-              handleSearch}>
-                <Text>영양성분 확인하기</Text>
-              </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={uploadToServer}>
+            <TouchableOpacity style={styles.button} onPress={() => {
+              uploadToServer();
+              handleSearch();
+            }}>
               <Text>업로드</Text>
             </TouchableOpacity>
             
