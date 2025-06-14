@@ -188,7 +188,7 @@ export default function index() {
             <TouchableOpacity onPress={() => openModal(index)} style={styles.cardButton}>
               <Text style={[styles.cardButtonText, { color: '#029673' }]}>수정</Text>
             </TouchableOpacity>
-            
+    
           </View>
         </View>
       )}

@@ -208,14 +208,7 @@ export default function index() {
           <Text style={styles.mealTypeText}>{item.mealType}</Text>
           <Image source={{ uri: item.imageUri }} style={styles.cardImage} />
           <Text style={styles.cardText}>{item.text}</Text>
-          <View style={styles.cardButtonRow}>
-           <TouchableOpacity onPress={() => deleteItem(index)} style={styles.cardButton}>
-              <Text style={[styles.cardButtonText, { color: '#FF3B30' }]}>삭제</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => openModal(index)} style={styles.cardButton}>
-              <Text style={[styles.cardButtonText, { color: '#029673' }]}>수정</Text>
-            </TouchableOpacity>
-            {result && (
+          {result && (
         <View>
           <Text>식품명: {result["식품명"]}</Text>
           <Text>에너지: {result["에너지(kcal)"]} kcal</Text>
@@ -231,6 +224,13 @@ export default function index() {
           <Text>비타민 D: {result["비타민 D(μg)"]} μg</Text>          
         </View>
       )}    
+          <View style={styles.cardButtonRow}>
+            <TouchableOpacity onPress={() => deleteItem(index)} style={styles.cardButton}>
+              <Text style={[styles.cardButtonText, { color: '#FF3B30' }]}>삭제</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => openModal(index)} style={styles.cardButton}>
+              <Text style={[styles.cardButtonText, { color: '#029673' }]}>수정</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
