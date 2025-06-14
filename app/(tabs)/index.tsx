@@ -29,6 +29,7 @@ type Food = {
   "탄수화물(g)": string;
   "단백질(g)": string;
   "당류(g)": string;
+  "지방(g)": string; // 지방 필드 추가
   "칼슘(mg)": string;
   "철(mg)": string;
   "인(mg)": string;
@@ -50,6 +51,7 @@ type Item = {
   imageUri: string;
   mealType: string;
   text: string;
+  servingSize: number; // servingSize 필드 추가 (숫자 타입)
   nutrition?: Food; // 각 Item이 자체 영양 정보를 가질 수 있도록 nutrition 속성 추가
 };
 
@@ -64,6 +66,7 @@ export default function index() {
   const [mealType, setMealType] = useState('아침');  // radiobutton option 선택 (기본값 '아침')
   const [predictName, setPredictName] = useState<string | null>(null); // 예측된 음식명
   const [result, setResult] = useState<Food | null>(null); // 현재 모달에서 검색/예측된 음식의 영양 정보 미리보기용
+  const [servingSize, setServingSize] = useState<string>('1'); // 몇 인분 (100g 기준), 기본값 '1' (문자열로 관리)
 
   const mealOptions = [
     { label: '아침', value: '아침' },
@@ -86,17 +89,21 @@ export default function index() {
 
   const openModal = (index: number | null = null) => {
     if (index !== null) {
+      // 기존 아이템 수정
       const item = filteredItems[index];
       setEditIndex(index);
       setImageUri(item.imageUri);
       setText(item.text);
       setMealType(item.mealType); // 수정 시 기존 식사 종류 설정
+      setServingSize(item.servingSize.toString()); // 수정 시 기존 서빙 사이즈 설정 (숫자를 문자열로)
       setResult(item.nutrition || null); // 수정 시 기존 영양 정보 미리보기로 로드
     } else {
+      // 새로운 아이템 추가
       setEditIndex(null);
       setImageUri(null);
       setText('');
       setMealType('아침'); // 새로운 아이템 추가 시 기본 식사 종류 설정
+      setServingSize('1'); // 새로운 아이템 추가 시 기본 서빙 사이즈 설정
       setPredictName(null); // 새로운 아이템 추가 시 예측 이름 초기화
       setResult(null); // 새로운 아이템 추가 시 영양 정보 미리보기 초기화
     }
@@ -113,6 +120,12 @@ export default function index() {
       return;
     }
 
+    const parsedServingSize = parseFloat(servingSize);
+    if (isNaN(parsedServingSize) || parsedServingSize <= 0) {
+      Alert.alert('저장 실패', '유효한 인분(g) 수를 입력해주세요.');
+      return;
+    }
+
     // saveItem 시점의 text를 기준으로 영양 정보를 다시 찾습니다.
     const foodNutrition = foodData.records.find(f => f["식품명"] && f["식품명"].includes(text));
 
@@ -121,6 +134,7 @@ export default function index() {
       text,
       date: selectedDate.format('YYYY-MM-DD'),
       mealType,
+      servingSize: parsedServingSize, // 파싱된 숫자 값으로 저장
       nutrition: foodNutrition // 해당 아이템의 영양 정보를 여기에 저장
     };
 
@@ -149,6 +163,7 @@ export default function index() {
     setEditIndex(null);
     setPredictName(null);
     setResult(null); // 저장 후 미리보기 영양 정보 초기화
+    setServingSize('1'); // 서빙 사이즈 초기화
   };
 
   const deleteItem = (index: number) => {
@@ -181,6 +196,7 @@ export default function index() {
       setText(''); // 새 이미지 선택 시 음식명 초기화
       setPredictName(null); // 예측 이름 초기화
       setResult(null); // 영양 정보 미리보기 초기화
+      setServingSize('1'); // 서빙 사이즈 초기화
     }
   };
 
@@ -251,6 +267,38 @@ export default function index() {
     }
   };
 
+  // 영양 정보를 계산하는 함수
+  // nutrition 파라미터의 타입을 Food | undefined | null로 변경하여 item.nutrition을 직접 받을 수 있도록 함
+  const calculateNutrition = (nutrition: Food | undefined | null, size: number) => {
+    if (!nutrition) return null; // nutrition이 undefined 또는 null인 경우 null 반환
+
+    // size는 사용자 입력값 (예: 1.5 인분)
+    // data.json의 영양 정보는 100g 기준이므로, 'g' 또는 'mg' 단위의 영양소에 size를 곱함
+    // 에너지(kcal), 비타민 A(μg RAE) 등은 단위 변환 없이 직접 곱함
+
+    const scale = size; // 100g당 값을 기준으로 '인분'에 비례하여 곱함
+
+    const nutrientsToCalculate = [
+      "에너지(kcal)", "탄수화물(g)", "단백질(g)", "당류(g)", "지방(g)",
+      "칼슘(mg)", "철(mg)", "인(mg)", "칼륨(mg)",
+      "비타민 A(μg RAE)", "비타민 C(mg)", "비타민 D(μg)"
+    ];
+
+    const calculated: { [key: string]: string } = {};
+    for (const key of nutrientsToCalculate) {
+      const value = parseFloat(nutrition[key]?.replace(',', '') || '0'); // 쉼표 제거 후 숫자로 변환
+      if (!isNaN(value)) {
+        calculated[key] = (value * scale).toFixed(2); // 소수점 둘째 자리까지
+      } else {
+        calculated[key] = 'N/A';
+      }
+    }
+    return calculated;
+  };
+
+  // 모달에 표시될 계산된 영양 정보 (실시간 입력값 반영)
+  const displayedNutrition = calculateNutrition(result, parseFloat(servingSize || '0'));
+
   return (
     <SafeAreaView style={styles.container}>
       {/* 캘린더 컴포넌트 */}
@@ -262,42 +310,50 @@ export default function index() {
         data={filteredItems}
         keyExtractor={(_, index) => index.toString()}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 80 }}
-        renderItem={({ item, index }) => (
-          <View style={styles.card}>
-            <Text style={styles.mealTypeText}>{item.mealType}</Text>
-            <Image source={{ uri: item.imageUri }} style={styles.cardImage} />
-            <Text style={styles.cardText}>{item.text}</Text>
-            
-            {/* 영양 정보 카드: 각 아이템의 nutrition 데이터를 사용 */}
-            {item.nutrition && (
-              <NutritionCard
-                data={{
-                  "에너지(kcal)": item.nutrition["에너지(kcal)"],
-                  "탄수화물(g)": item.nutrition["탄수화물(g)"],
-                  "단백질(g)": item.nutrition["단백질(g)"],
-                  "당류(g)": item.nutrition["당류(g)"],
-                  "칼슘(mg)": item.nutrition["칼슘(mg)"],
-                  "철(mg)": item.nutrition["철(mg)"],
-                  "인(mg)": item.nutrition["인(mg)"],
-                  "칼륨(mg)": item.nutrition["칼륨(mg)"],
-                  "비타민 A(μg RAE)": item.nutrition["비타민 A(μg RAE)"],
-                  "비타민 C(mg)": item.nutrition["비타민 C(mg)"],
-                  "비타민 D(μg)": item.nutrition["비타민 D(μg)"],
-                }}
-              />
-            )}
-            
-            {/* 카드 내 버튼 */}
-            <View style={styles.cardButtonRow}>
-              <TouchableOpacity onPress={() => deleteItem(index)} style={styles.cardButton}>
-                <Text style={[styles.cardButtonText, { color: '#FF3B30' }]}>삭제</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => openModal(index)} style={styles.cardButton}>
-                <Text style={[styles.cardButtonText, { color: '#029673' }]}>수정</Text>
-              </TouchableOpacity>
+        renderItem={({ item, index }) => {
+          // 리스트의 각 아이템에서도 저장된 servingSize를 기반으로 영양 정보 계산
+          // item.nutrition은 Food | undefined 타입이므로, calculateNutrition 함수가 이를 받도록 수정됨
+          const itemDisplayedNutrition = calculateNutrition(item.nutrition, item.servingSize);
+
+          return (
+            <View style={styles.card}>
+              <Text style={styles.mealTypeText}>{item.mealType}</Text>
+              <Image source={{ uri: item.imageUri }} style={styles.cardImage} />
+              <Text style={styles.cardText}>{item.text}</Text>
+              <Text style={styles.cardServingText}>{`(${item.servingSize}인분)`}</Text>
+              
+              {/* 영양 정보 카드: 각 아이템의 nutrition 데이터를 사용 */}
+              {itemDisplayedNutrition && (
+                <NutritionCard
+                  data={{
+                    "에너지(kcal)": itemDisplayedNutrition["에너지(kcal)"],
+                    "탄수화물(g)": itemDisplayedNutrition["탄수화물(g)"],
+                    "단백질(g)": itemDisplayedNutrition["단백질(g)"],
+                    "당류(g)": itemDisplayedNutrition["당류(g)"],
+                    "지방(g)": itemDisplayedNutrition["지방(g)"],
+                    "칼슘(mg)": itemDisplayedNutrition["칼슘(mg)"],
+                    "철(mg)": itemDisplayedNutrition["철(mg)"],
+                    "인(mg)": itemDisplayedNutrition["인(mg)"],
+                    "칼륨(mg)": itemDisplayedNutrition["칼륨(mg)"],
+                    "비타민 A(μg RAE)": itemDisplayedNutrition["비타민 A(μg RAE)"],
+                    "비타민 C(mg)": itemDisplayedNutrition["비타민 C(mg)"],
+                    "비타민 D(μg)": itemDisplayedNutrition["비타민 D(μg)"],
+                  }}
+                />
+              )}
+              
+              {/* 카드 내 버튼 */}
+              <View style={styles.cardButtonRow}>
+                <TouchableOpacity onPress={() => deleteItem(index)} style={styles.cardButton}>
+                  <Text style={[styles.cardButtonText, { color: '#FF3B30' }]}>삭제</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => openModal(index)} style={styles.cardButton}>
+                  <Text style={[styles.cardButtonText, { color: '#029673' }]}>수정</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        )}
+          );
+        }}
       />
 
       {/* 모달 (아이템 추가/수정) */}
@@ -348,23 +404,39 @@ export default function index() {
                 </Pressable>
               ))}
             </View>
+
+            <Text style={styles.label}>몇 인분 (100g 기준)</Text>
+            <TextInput
+              value={servingSize}
+              onChangeText={(val) => setServingSize(val.replace(/[^0-9.]/g, ''))} // 숫자와 소수점만 입력 가능하게
+              keyboardType="numeric"
+              placeholder="예: 1, 0.5, 2.5"
+              style={styles.input}
+            />
+            
             {/* 이미지 업로드 및 음식명 검색 버튼 */}
             <TouchableOpacity style={styles.button} onPress={uploadToServer}>
-              {/* handleSearch는 uploadToServer 내부에서 예측된 class로 자동 호출되도록 변경 */}
               <Text>업로드 및 영양정보 검색</Text>
             </TouchableOpacity>
             
             {/* 영양 정보 미리보기 (result 상태에 데이터가 있을 경우) */}
-            {result && (
+            {displayedNutrition && result && (
               <View style={styles.nutritionPreviewContainer}>
                 <Text style={styles.nutritionPreviewTitle}>
                   {`예측/검색된 영양 정보 (${result["식품명"] || '이름 없음'})`}
                 </Text>
-                <Text>에너지: {result["에너지(kcal)"] || 'N/A'} kcal</Text>
-                <Text>탄수화물: {result["탄수화물(g)"] || 'N/A'} g</Text>
-                <Text>단백질: {result["단백질(g)"] || 'N/A'} g</Text>
-                <Text>지방: {result["지방(g)"] || 'N/A'} g</Text>
-                {/* 필요한 다른 영양소들도 여기에 표시 가능 */}
+                <Text>에너지: {displayedNutrition["에너지(kcal)"] || 'N/A'} kcal</Text>
+                <Text>탄수화물: {displayedNutrition["탄수화물(g)"] || 'N/A'} g</Text>
+                <Text>단백질: {displayedNutrition["단백질(g)"] || 'N/A'} g</Text>
+                <Text>지방: {displayedNutrition["지방(g)"] || 'N/A'} g</Text>
+                <Text>당류: {displayedNutrition["당류(g)"] || 'N/A'} g</Text>
+                <Text>칼슘: {displayedNutrition["칼슘(mg)"] || 'N/A'} mg</Text>
+                <Text>철: {displayedNutrition["철(mg)"] || 'N/A'} mg</Text>
+                <Text>인: {displayedNutrition["인(mg)"] || 'N/A'} mg</Text>
+                <Text>칼륨: {displayedNutrition["칼륨(mg)"] || 'N/A'} mg</Text>
+                <Text>비타민 A: {displayedNutrition["비타민 A(μg RAE)"] || 'N/A'} μg RAE</Text>
+                <Text>비타민 C: {displayedNutrition["비타민 C(mg)"] || 'N/A'} mg</Text>
+                <Text>비타민 D: {displayedNutrition["비타민 D(μg)"] || 'N/A'} μg</Text>
               </View>
             )}
 
@@ -540,6 +612,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: '#333',
+  },
+  cardServingText: { // 새로 추가된 스타일
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
   },
   cardButtonRow: {
     flexDirection: 'row',

@@ -9,6 +9,7 @@ type NutritionProps = {
     "탄수화물(g)": string;
     "단백질(g)": string;
     "당류(g)": string;
+    "지방(g)": string;
     "칼슘(mg)": string;
     "철(mg)": string;
     "인(mg)": string;
