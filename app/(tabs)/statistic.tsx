@@ -1,66 +1,57 @@
-import { useState } from 'react';
-import { Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  LineChart
+} from "react-native-chart-kit";
 
-type Food = {
-  [key: string]: string;
-};
+import { Dimensions, Text, View } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-type FoodData = {
-  records: Food[];
-};
-
-const foodData: FoodData = require('../../assets/data.json');
-
-export default function App() {
-  const [input, setInput] = useState('');
-  const [result, setResult] = useState<Food | null>(null);
-
-  const handleSearch = () => {
-    const food = foodData.records.find(f => f["식품명"].includes(input));
-    setResult(food || null);
-  };
-
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>음식 영양정보 조회기</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="예: 토스트(식빵)"
-        onChangeText={setInput}
-        value={input}
-      />
-      <Button title="검색" onPress={handleSearch} />
-      {result && (
-        <View>
-          <Text>식품명: {result["식품명"]}</Text>
-          <Text>에너지: {result["에너지(kcal)"]} kcal</Text>
-          <Text>탄수화물: {result["탄수화물(g)"]} g</Text>
-          <Text>단백질: {result["단백질(g)"]} g</Text>
-          <Text>당류: {result["당류(g)"]} g</Text>
-          <Text>칼슘: {result["칼슘(mg)"]} mg</Text>
-          <Text>철: {result["철(mg)"]} mg</Text>
-          <Text>인: {result["인(mg)"]} mg</Text>
-          <Text>칼륨: {result["칼륨(mg)"]} mg</Text>
-          <Text>비타민 A: {result["비타민 A(μg RAE)"]} μg RAE</Text>
-          <Text>비타민 C: {result["비타민 C(mg)"]} mg</Text>          
-          <Text>비타민 D: {result["비타민 D(μg)"]} μg</Text>          
-        </View>
-      )}
-    </ScrollView>
-  );
+export default function () {
+  return(
+<SafeAreaView>
+  <Text>Bezier Line Chart</Text>
+  <LineChart
+    data={{
+      labels: ["January", "February", "March", "April", "May", "June"],
+      datasets: [
+        {
+          data: [
+            Math.random() * 100,
+            Math.random() * 100,
+            Math.random() * 100,
+            Math.random() * 100,
+            Math.random() * 100,
+            Math.random() * 100
+          ]
+        }
+      ]
+    }}
+    width={Dimensions.get("window").width} // from react-native
+    height={220}
+    yAxisLabel="$"
+    yAxisSuffix="k"
+    yAxisInterval={1} // optional, defaults to 1
+    chartConfig={{
+      backgroundColor: "#e26a00",
+      backgroundGradientFrom: "#fb8c00",
+      backgroundGradientTo: "#ffa726",
+      decimalPlaces: 2, // optional, defaults to 2dp
+      color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+      labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+      style: {
+        borderRadius: 16
+      },
+      propsForDots: {
+        r: "6",
+        strokeWidth: "2",
+        stroke: "#ffa726"
+      }
+    }}
+    bezier
+    style={{
+      marginVertical: 8,
+      borderRadius: 16
+    }}
+  />
+</SafeAreaView>
+  )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  input: {
-    borderWidth: 1,
-    padding: 10,
-    marginVertical: 10,
-  },
-});
